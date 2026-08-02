@@ -17,11 +17,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: true
+          cache: false # 关闭缓存机制，避免因缺少 go.sum 导致构建失败
 
       - name: Build for Linux (amd64)
         run: |
-          GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements
+          go mod tidy || true # 如果定义了 go.mod，自动补全依赖
+          GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements .
           echo "Build completed successfully"
           file grok2api-egress-enhancements
 
