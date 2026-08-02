@@ -1,4 +1,4 @@
-name: Build Go Linux Binary
+name: Build Go Linux Plugin (.so)
 
 on:
   push:
@@ -16,42 +16,36 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26.x' # 匹配文档要求的 Go 1.26+
           cache: false
 
-      - name: Find Go files and Build
+      - name: Install C Compiler
         run: |
-          echo "=== 正在查找项目中的所有 .go 文件 ==="
-          find . -name "*.go"
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ libc6-dev
+
+      - name: Run Tests and Build Shared Library (.so)
+        run: |
+          cd cpa-plugin/go
           
-          # 寻找包含 package main 的入口文件所在目录
-          MAIN_DIR=$(find . -name "*.go" -exec grep -l "package main" {} + | head -n 1 | xargs -r dirname)
-          
-          if [ -z "$MAIN_DIR" ]; then
-            echo "错误：仓库中没有找到包含 package main 的 Go 入口代码！"
-            exit 1
-          fi
-          
-          echo "=== 找到入口目录: $MAIN_DIR ==="
-          cd "$MAIN_DIR"
-          
-          # 如果所在目录没有 go.mod，则初始化一个
+          # 自动初始化模块依赖
           if [ ! -f go.mod ]; then
-            go mod init buildApp
+            go mod init grok2api-egress
           fi
           go mod tidy || true
           
-          # 开始编译 Linux 二进制
-          GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements-linux .
-          echo "Build completed successfully"
-          file grok2api-egress-enhancements-linux
+          # 开启 CGO 编译生成 .so 动态链接库
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildmode=c-shared -trimpath -o grok2api-egress.so .
           
-          # 将编译好的文件移动回根目录，方便后续打包上传
-          mv grok2api-egress-enhancements-linux $GITHUB_WORKSPACE/
+          echo "=== 编译产物验证 ==="
+          file grok2api-egress.so
+          
+          # 将编译好的 .so 文件移动到根目录准备上传
+          mv grok2api-egress.so $GITHUB_WORKSPACE/
 
-      - name: Upload Linux binary
+      - name: Upload Linux Shared Library (.so)
         uses: actions/upload-artifact@v4
         with:
-          name: grok2api-egress-enhancements-linux
-          path: grok2api-egress-enhancements-linux
+          name: grok2api-egress-so
+          path: grok2api-egress.so
           retention-days: 7
