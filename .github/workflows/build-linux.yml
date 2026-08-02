@@ -20,10 +20,12 @@ jobs:
           cache: false
 
       - name: Build cpa-plugin for Linux (amd64)
-        # 进入 cpa-plugin 目录进行依赖梳理与编译
         run: |
           cd cpa-plugin
-          go mod tidy || true
+          # 自动初始化 go.mod 解决模块缺失问题
+          go mod init cpa-plugin
+          # 关闭 Go Module 严格限制以支持传统编译模式
+          export GO111MODULE=auto
           GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements-linux .
           echo "Build completed successfully"
           file grok2api-egress-enhancements-linux
