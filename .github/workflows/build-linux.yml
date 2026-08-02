@@ -19,20 +19,18 @@ jobs:
           go-version: '1.23'
           cache: false
 
-      - name: Build for Linux (amd64)
+      - name: Build cpa-plugin for Linux (amd64)
+        # 进入 cpa-plugin 目录进行依赖梳理与编译
         run: |
-          # 如果没有 go.mod，自动初始化
-          if [ ! -f go.mod ]; then
-            go mod init grok2api-egress-enhancements
-          fi
-          go mod tidy
-          GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements .
+          cd cpa-plugin
+          go mod tidy || true
+          GOOS=linux GOARCH=amd64 go build -o grok2api-egress-enhancements-linux .
           echo "Build completed successfully"
-          file grok2api-egress-enhancements
+          file grok2api-egress-enhancements-linux
 
       - name: Upload Linux binary
         uses: actions/upload-artifact@v4
         with:
           name: grok2api-egress-enhancements-linux
-          path: grok2api-egress-enhancements
+          path: cpa-plugin/grok2api-egress-enhancements-linux
           retention-days: 7
