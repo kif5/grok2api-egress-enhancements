@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [main, master]
 
+# 核心关键：赋予 Workflow 写入 Release 和 Contents 的权限
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,7 +46,6 @@ jobs:
           
           mv grok2api-egress.so $GITHUB_WORKSPACE/
 
-      # 备份：仍然保存到 Actions 的 Artifacts
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -50,7 +53,7 @@ jobs:
           path: grok2api-egress.so
           retention-days: 7
 
-      # 当推送到 tag (例如 v1.0.0) 时，自动将 .so 上传到 Releases
+      # 自动将 .so 动态库上传到 Releases
       - name: Create Release and Upload Asset
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
